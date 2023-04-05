@@ -25,27 +25,27 @@ public class UserController : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = "Admin")]
-    public IActionResult Get()
+    public async Task<IActionResult> Get()
     {
-        return Ok(UsersCollection.GetAll());
+        return Ok(await UsersCollection.GetAll());
     }
 
     [HttpGet("{id:length(24)}", Name = "GetUser")]
-    public IActionResult Get(string id)
+    public async Task<IActionResult> Get(string id)
     {
-        var user = UsersCollection.GetOne(user => user._id == id);
+        var user = await UsersCollection.GetOne(user => user._id == id);
         return (user == null) ? NotFound() : Ok(user);
     }
 
     [HttpPost("SignUp", Name = "CreateUser")]
     [AllowAnonymous]
-    public IActionResult Post([FromBody] createUserDTO user)
+    public async Task<IActionResult> Post([FromBody] createUserDTO user)
     {
         if (ModelState.IsValid)
         {
             var newUser = Mapper.Map<UserModel>(user);
             newUser.Password = BC.HashPassword(newUser.Password, 10);
-            var addedUser = UsersCollection.Add(newUser);
+            var addedUser = await UsersCollection.Add(newUser);
             return CreatedAtRoute("CreateUser", addedUser);
         }
         else
@@ -56,7 +56,7 @@ public class UserController : ControllerBase
 
     [HttpPut("{id:length(24)}")]
     [Authorize(Policy = "HasID")]
-    public IActionResult Put([FromRoute] string id, [FromBody] EditUserDTO user)
+    public async Task<IActionResult> Put([FromRoute] string id, [FromBody] EditUserDTO user)
     {
         var AuthUserId = User.FindFirst(JwtRegisteredClaimNames.Sub);
         if (AuthUserId == null || AuthUserId.Value != id) return Challenge();
@@ -64,15 +64,15 @@ public class UserController : ControllerBase
         EditedUser._id = id;
         if (EditedUser.Password != null)
             EditedUser.Password = BC.HashPassword(EditedUser.Password, 12);
-        var result = UsersCollection.Update(EditedUser);
+        var result = await UsersCollection.Update(EditedUser);
         return (result.ModifiedCount > 0) ? Ok() : NotFound();
     }
 
     [HttpDelete("{id:length(24)}")]
     [Authorize(Policy = "HasID")]
-    public IActionResult Delete(string id)
+    public async Task<IActionResult> Delete(string id)
     {
-        var result = UsersCollection.Delete(x => x._id == id);
+        var result = await UsersCollection.Delete(x => x._id == id);
         return (result.DeletedCount > 0) ? Ok() : NotFound();
     }
 }

@@ -11,35 +11,39 @@ public class ProductRepository : IProductRepository
     {
         _Products = mongoClient.GetDatabase("DepotShop").GetCollection<ProductModel>("products");
     }
-    public ProductModel Add(ProductModel entity)
+    public async Task<ProductModel> Add(ProductModel entity)
     {
         var Result = _Products.Aggregate()
             .Group(pro => 1, Product => new { maxId = Product.Max(row => row._id) })
             .FirstOrDefault();
         int MaxId = Result?.maxId ?? 0;
-        entity._id = MaxId+1;
-        _Products.InsertOne(entity);
+        entity._id = MaxId + 1;
+        await _Products.InsertOneAsync(entity);
         return entity;
     }
 
-    public DeleteResult Delete(Expression<Func<ProductModel, bool>> filter)
-            =>_Products.DeleteOne(filter);
+    public async Task<DeleteResult> Delete(Expression<Func<ProductModel, bool>> filter)
+            => await _Products.DeleteOneAsync(filter);
 
-    public List<ProductModel> GetAll()
-            => _Products.Find(_ => true).ToList();
-
-    public ProductModel? GetOne(Expression<Func<ProductModel, bool>> filter)
-            =>_Products.Find(filter).FirstOrDefault();
-
-    public List<ProductModel> GetProducts(List<int> ProductsIDs)
+    public async Task<List<ProductModel>> GetAll()
     {
-        var filter = Builders<ProductModel>.Filter.In(P => P._id, ProductsIDs);
-        return _Products.Find(filter).ToList();
+        var Products = await _Products.FindAsync(_ => true);
+        return Products.ToList();
     }
 
-    public UpdateResult Update(ProductModel entity)
+    public async Task<ProductModel?> GetOne(Expression<Func<ProductModel, bool>> filter)
+            => await _Products.Find(filter).FirstOrDefaultAsync();
+
+    public async Task<List<ProductModel>> GetProducts(List<int> ProductsIDs)
     {
-        var UpdatedProps=new BsonDocument();
+        var filter = Builders<ProductModel>.Filter.In(P => P._id, ProductsIDs);
+        var Products = await _Products.FindAsync(filter);
+        return Products.ToList();
+    }
+
+    public async Task<UpdateResult> Update(ProductModel entity)
+    {
+        var UpdatedProps = new BsonDocument();
         if (entity.ProductName != null)
             UpdatedProps.Add(new BsonElement("ProductName", entity.ProductName));
         if (entity.Price != 0)
@@ -55,6 +59,6 @@ public class ProductRepository : IProductRepository
         var updatedoc = new BsonDocument()
                         .Add("$set", UpdatedProps);
         var update = new UpdateDocument(updatedoc);
-        return _Products.UpdateOne(P=>P._id==entity._id,update);
+        return await _Products.UpdateOneAsync(P => P._id == entity._id, update);
     }
 }

@@ -12,44 +12,51 @@ public class OrderRepository : IOrderRepository
     {
         _Orders = mongoClient.GetDatabase("DepotShop").GetCollection<OrderModel>("orders");
     }
-    public OrderModel Add(OrderModel entity)
+    public async Task<OrderModel> Add(OrderModel entity)
     {
-        _Orders.InsertOne(entity);
+        await _Orders.InsertOneAsync(entity);
         return entity;
     }
 
-    public UpdateResult CompleteOrder(Expression<Func<OrderModel, bool>> filter)
+    public async Task<UpdateResult> CompleteOrder(Expression<Func<OrderModel, bool>> filter)
     {
         var update = Builders<OrderModel>.Update.Set(O => O.Delivered, true);
-        return _Orders.UpdateOne(filter, update);
+        return await _Orders.UpdateOneAsync(filter, update);
     }
 
-    public DeleteResult Delete(Expression<Func<OrderModel, bool>> filter)
-            => _Orders.DeleteOne(filter);
+    public async Task<DeleteResult> Delete(Expression<Func<OrderModel, bool>> filter)
+            => await _Orders.DeleteOneAsync(filter);
 
-    public List<OrderModel> GetAll()
-            => _Orders.Find(_ => true).ToList();
+    public async Task<List<OrderModel>> GetAll()
+    {
+        var orders = await _Orders.FindAsync(_ => true);
+        return orders.ToList();
+    }
 
-    public OrderModel? GetOne(Expression<Func<OrderModel, bool>> filter)
-            => _Orders.Find(filter).FirstOrDefault();
+    public async Task<OrderModel?> GetOne(Expression<Func<OrderModel, bool>> filter)
+            => await _Orders.Find(filter).FirstOrDefaultAsync();
 
-    public UpdateResult Update(OrderModel entity)
+    public async Task<List<PopulatedOrderDTO>> GetOrdersWithDetails()
+    {
+        return await GetOrders(_ => true);
+    }
+
+    public async Task<PopulatedOrderDTO?> GetOrderWithDetails(string id)
+    {
+        var result = await GetOrders(O => O._id == id);
+        return result.FirstOrDefault();
+    }
+
+    public async Task<UpdateResult> Update(OrderModel entity)
     {
         var UpdateProperties = new BsonDocument();
         var UpdateDoc = new BsonDocument().Add("$set", UpdateProperties);
         var update = new UpdateDocument(UpdateDoc);
-        return _Orders.UpdateOne(order => order._id == entity._id, update);
+        return await _Orders.UpdateOneAsync(order => order._id == entity._id, update);
     }
-    public List<PopulatedOrderDTO> GetOrdersWithDetails()
-            => GetOrders(_ => true);
+    private async Task<List<PopulatedOrderDTO>> GetOrders(Expression<Func<OrderModel, bool>> filter)
 
-    public PopulatedOrderDTO? GetOrderWithDetails(string id)
-            => GetOrders(O => O._id == id).FirstOrDefault();
-
-
-
-    private List<PopulatedOrderDTO> GetOrders(Expression<Func<OrderModel, bool>> filter)
-            => _Orders.Aggregate()
+             => await _Orders.Aggregate()
             .Match(filter)
             .Lookup("users", "user", "_id", "User")
             .Lookup("products", "Products.Product", "_id", "Products")
@@ -61,5 +68,5 @@ public class OrderRepository : IOrderRepository
                     { "Delivered", 1 },
                     { "createdAt", 1 },
                     {"User",1 },
-            }).ToList();
+            }).ToListAsync();
 }

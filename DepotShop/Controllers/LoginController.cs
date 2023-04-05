@@ -26,7 +26,7 @@ public class LoginController : ControllerBase
 
     [HttpPost]
     [AllowAnonymous]
-    public IActionResult Index(LoginDTO loginDetails)
+    public async Task<IActionResult> Index(LoginDTO loginDetails)
     {
         //check Admin
         var AdminEmail = Configuration.GetValue<string>("Admin:Email");
@@ -36,7 +36,7 @@ public class LoginController : ControllerBase
             return Ok(GetToken(null));
         }
         //check User
-        var user = userRepository.GetOne(user => user.Email == loginDetails.Email);
+        var user = await userRepository.GetOne(user => user.Email == loginDetails.Email);
         if (user == null) return Challenge();
         var HashingResult = BC.Verify(loginDetails.Password, user.Password);
         if (!HashingResult) return Challenge();

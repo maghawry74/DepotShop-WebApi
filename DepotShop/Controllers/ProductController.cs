@@ -20,27 +20,27 @@ public class ProductController : ControllerBase
     }
     [HttpGet]
     [AllowAnonymous]
-    public IActionResult Get()
+    public async Task<IActionResult> Get()
     {
-        return Ok(ProductRepository.GetAll());
+        return Ok(await ProductRepository.GetAll());
     }
 
     [HttpGet("{id}")]
     [AllowAnonymous]
-    public IActionResult Get(int id)
+    public async Task<IActionResult> Get(int id)
     {
-        var Product = ProductRepository.GetOne(product => product._id == id);
+        var Product = await ProductRepository.GetOne(product => product._id == id);
         return (Product != null) ? Ok(Product) : NotFound();
     }
 
     [HttpPost(Name = "CreateProduct")]
     [Authorize(Policy = "Admin")]
-    public IActionResult Post([FromBody] newProductDTO Product)
+    public async Task<IActionResult> Post([FromBody] newProductDTO Product)
     {
         if (ModelState.IsValid)
         {
             var newProduct = Mapper.Map<ProductModel>(Product);
-            var addedProduct = ProductRepository.Add(newProduct);
+            var addedProduct = await ProductRepository.Add(newProduct);
             return CreatedAtRoute("CreateProduct", addedProduct);
         }
         else
@@ -51,19 +51,19 @@ public class ProductController : ControllerBase
 
     [HttpPut("{id}")]
     [Authorize(Policy = "Admin")]
-    public IActionResult Put([FromRoute] int id, [FromBody] EditProductDTO product)
+    public async Task<IActionResult> Put([FromRoute] int id, [FromBody] EditProductDTO product)
     {
         var EditedProduct = Mapper.Map<ProductModel>(product);
         EditedProduct._id = id;
-        var result = ProductRepository.Update(EditedProduct);
+        var result = await ProductRepository.Update(EditedProduct);
         return (result.ModifiedCount > 0) ? Ok() : NotFound();
     }
 
     [HttpDelete("{id}")]
     [Authorize(Policy = "Admin")]
-    public IActionResult Delete(int id)
+    public async Task<IActionResult> Delete(int id)
     {
-        var result = ProductRepository.Delete(product => product._id == id);
+        var result = await ProductRepository.Delete(product => product._id == id);
         return (result.DeletedCount > 0) ? Ok() : NotFound();
     }
 }

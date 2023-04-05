@@ -30,20 +30,20 @@ public class OrderController : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = "Admin")]
-    public IActionResult Get()
+    public async Task<IActionResult> Get()
     {
-        return Ok(OrderRepository.GetOrdersWithDetails());
+        return Ok(await OrderRepository.GetOrdersWithDetails());
     }
 
     [HttpGet("{id}")]
-    public IActionResult Get(string id)
+    public async Task<IActionResult> Get(string id)
     {
-        var Order = OrderRepository.GetOrderWithDetails(id);
+        var Order = await OrderRepository.GetOrderWithDetails(id);
         return (Order != null) ? Ok(Order) : NotFound();
     }
 
     [HttpPost(Name = "CreateOrder")]
-    public IActionResult Post([FromBody] createOrderDTO order)
+    public async Task<IActionResult> Post([FromBody] createOrderDTO order)
     {
         var user = UserRepository.GetOne(U => U._id == order.user);
         if (user == null)
@@ -53,7 +53,7 @@ public class OrderController : ControllerBase
         {
             ProductsId.Add(pro.Product);
         }
-        var products = ProductRepository.GetProducts(ProductsId);
+        var products = await ProductRepository.GetProducts(ProductsId);
         if (products.Count != ProductsId.Count)
             return BadRequest("Some or All Products Not Found");
         var NewOrder = Mapper.Map<OrderModel>(order);
@@ -65,16 +65,16 @@ public class OrderController : ControllerBase
 
     [HttpPatch("{id}")]
     [Authorize(Policy = "Admin")]
-    public IActionResult Patch(string id)
+    public async Task<IActionResult> Patch(string id)
     {
-        var Result = OrderRepository.CompleteOrder(O => O._id == id);
+        var Result = await OrderRepository.CompleteOrder(O => O._id == id);
         return (Result.ModifiedCount > 0) ? Ok() : NotFound();
     }
 
     [HttpDelete("{id}")]
-    public IActionResult Delete(string id)
+    public async Task<IActionResult> Delete(string id)
     {
-        var Result = OrderRepository.Delete(O => O._id == id);
+        var Result = await OrderRepository.Delete(O => O._id == id);
         return (Result.DeletedCount > 0) ? Ok() : NotFound();
     }
 }

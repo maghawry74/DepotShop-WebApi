@@ -7,8 +7,8 @@ namespace DepotShopDataAccess.Repository
 {
     public interface IOrderRepository : IRepository<OrderModel>
     {
-        UpdateResult CompleteOrder(Expression<Func<OrderModel, bool>> filter);
-        List<PopulatedOrderDTO> GetOrdersWithDetails();
-        PopulatedOrderDTO? GetOrderWithDetails(string id);
+        Task<UpdateResult> CompleteOrder(Expression<Func<OrderModel, bool>> filter);
+        Task<List<PopulatedOrderDTO>> GetOrdersWithDetails();
+        Task<PopulatedOrderDTO?> GetOrderWithDetails(string id);
     }
 }
